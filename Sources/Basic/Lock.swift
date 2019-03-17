@@ -53,6 +53,7 @@ public final class FileLock {
     ///
     /// Note: This method can throw if underlying POSIX methods fail.
     public func lock() throws {
+#if false
         // Open the lock file.
         if fd == nil {
             let fd = SPMLibc.open(lockFile.pathString, O_WRONLY | O_CREAT | O_CLOEXEC, 0o666)
@@ -70,17 +71,22 @@ public final class FileLock {
             if errno == EINTR { continue }
             throw ProcessLockError.unableToAquireLock(errno: errno)
         }
+#endif
     }
 
     /// Unlock the held lock.
     public func unlock() {
+#if false
         guard let fd = fd else { return }
         flock(fd, LOCK_UN)
+#endif
     }
 
     deinit {
+#if false
         guard let fd = fd else { return }
         close(fd)
+#endif
     }
 
     /// Execute the given block while holding the lock.

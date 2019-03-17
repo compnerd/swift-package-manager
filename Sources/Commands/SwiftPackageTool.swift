@@ -243,6 +243,7 @@ public class SwiftPackageTool: SwiftTool<PackageToolOptions> {
             var genOptions = options.xcodeprojOptions
             genOptions.manifestLoader = try getManifestLoader()
 
+#if false
             try Xcodeproj.generate(
                 projectName: projectName,
                 xcodeprojPath: xcodeprojPath,
@@ -250,8 +251,9 @@ public class SwiftPackageTool: SwiftTool<PackageToolOptions> {
                 options: genOptions,
                 diagnostics: diagnostics
             )
+#endif
 
-            print("generated:", xcodeprojPath.prettyPath(cwd: originalWorkingDirectory))
+            // print("generated:", xcodeprojPath.prettyPath(cwd: originalWorkingDirectory))
 
             // Run the file watcher if requested.
             if options.xcodeprojOptions.enableAutogeneration {

@@ -102,6 +102,7 @@ public final class TemporaryFile {
         self.deleteOnClose = deleteOnClose
         // Determine in which directory to create the temporary file.
         self.dir = try determineTempDirectory(dir)
+#if false
         // Construct path to the temporary file.
         let path = self.dir.appending(RelativePath(prefix + ".XXXXXX" + suffix))
 
@@ -116,13 +117,20 @@ public final class TemporaryFile {
 
         self.path = AbsolutePath(String(cString: template))
         fileHandle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+#else
+        self.fd = -1
+        self.path = AbsolutePath(String())
+        self.fileHandle = FileHandle(fileDescriptor: -1)
+#endif
     }
 
     /// Remove the temporary file before deallocating.
     deinit {
+#if false
         if deleteOnClose {
             unlink(path.pathString)
         }
+#endif
     }
 }
 
@@ -162,8 +170,10 @@ private extension MakeDirectoryError {
             self = .permissionDenied
         case SPMLibc.ELOOP, SPMLibc.ENOENT, SPMLibc.ENOTDIR:
             self = .unresolvablePathComponent
+#if false
         case SPMLibc.ENOMEM, SPMLibc.EDQUOT:
             self = .outOfMemory
+#endif
         default:
             self = .other(errno)
         }
@@ -198,6 +208,7 @@ public final class TemporaryDirectory {
     ) throws {
         self.shouldRemoveTreeOnDeinit = removeTreeOnDeinit
         self.prefix = prefix
+#if false
         // Construct path to the temporary directory.
         let path = try determineTempDirectory(dir).appending(RelativePath(prefix + ".XXXXXX"))
 
@@ -211,15 +222,19 @@ public final class TemporaryDirectory {
         }
 
         self.path = AbsolutePath(String(cString: template))
+#endif
+          self.path = AbsolutePath(String())
     }
 
     /// Remove the temporary file before deallocating.
     deinit {
+#if false
         if shouldRemoveTreeOnDeinit {
             _ = try? FileManager.default.removeItem(atPath: path.pathString)
         } else {
             rmdir(path.pathString)
         }
+#endif
     }
 }
 

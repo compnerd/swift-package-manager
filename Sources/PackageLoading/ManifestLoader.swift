@@ -12,7 +12,7 @@ import Basic
 import PackageModel
 import SPMUtility
 import SPMLLBuild
-import struct POSIX.FileInfo
+import struct Basic.FileInfo
 import class Foundation.ProcessInfo
 public typealias FileSystem = Basic.FileSystem
 
@@ -167,7 +167,8 @@ public final class ManifestLoader: ManifestLoaderProtocol {
         if let cacheDir = cacheDir {
             try? localFileSystem.createDirectory(cacheDir, recursive: true)
         }
-        self.cacheDir = cacheDir.map(resolveSymlinks)
+        // self.cacheDir = cacheDir.map(resolveSymlinks)
+        self.cacheDir = AbsolutePath("")
     }
 
     @available(*, deprecated)
@@ -369,6 +370,7 @@ public final class ManifestLoader: ManifestLoaderProtocol {
             manifestVersion: ManifestVersion,
             manifestParseResult: inout ManifestParseResult
         ) throws {
+#if false
             self.delegate?.willParse(manifest: manifestPath)
 
             // The compiler has special meaning for files with extensions like .ll, .bc etc.
@@ -431,6 +433,7 @@ public final class ManifestLoader: ManifestLoaderProtocol {
                 throw StringError("the manifest has invalid encoding")
             }
             manifestParseResult.parsedManifest = json
+#endif
         }
 
         var manifestParseResult = ManifestParseResult()

@@ -20,6 +20,8 @@ import Workspace
 import SPMLibc
 import func Foundation.NSUserName
 import SPMLLBuild
+import Foundation
+
 typealias Diagnostic = Basic.Diagnostic
 
 struct ChdirDeprecatedDiagnostic: DiagnosticData {
@@ -391,11 +393,12 @@ public class SwiftTool<Options: ToolOptions> {
             if let packagePath = options.packagePath ?? options.chdir {
                 // FIXME: This should be an API which takes AbsolutePath and maybe
                 // should be moved to file system APIs with currentWorkingDirectory.
-                try POSIX.chdir(packagePath.pathString)
+                FileManager.default.changeCurrentDirectoryPath(packagePath.pathString)
             }
 
             let processSet = ProcessSet()
             interruptHandler = try InterruptHandler {
+#if false
                 // Terminate all processes on receiving an interrupt signal.
                 processSet.terminate()
 
@@ -412,6 +415,7 @@ public class SwiftTool<Options: ToolOptions> {
 
                 // Die with sigint.
                 kill(getpid(), SIGINT)
+#endif
             }
             self.processSet = processSet
 
@@ -473,7 +477,7 @@ public class SwiftTool<Options: ToolOptions> {
         }
         let delegate = ToolWorkspaceDelegate(self.stdoutStream)
         let rootPackage = try getPackageRoot()
-        let provider = GitRepositoryProvider(processSet: processSet)
+        // let provider = GitRepositoryProvider(processSet: processSet)
         let workspace = Workspace(
             dataPath: buildPath,
             editablesPath: rootPackage.appending(component: "Packages"),
@@ -482,7 +486,7 @@ public class SwiftTool<Options: ToolOptions> {
             toolsVersionLoader: ToolsVersionLoader(),
             delegate: delegate,
             config: try getSwiftPMConfig(),
-            repositoryProvider: provider,
+            // repositoryProvider: provider,
             isResolverPrefetchingEnabled: options.shouldEnableResolverPrefetching,
             enablePubgrubResolver: options.enablePubgrubResolver,
             skipUpdate: options.skipDependencyUpdate
@@ -623,10 +627,10 @@ public class SwiftTool<Options: ToolOptions> {
 
         // Create backwards-compatibilty symlink to old build path.
         let oldBuildPath = buildPath.appending(component: options.configuration.dirname)
-        if exists(oldBuildPath) {
+        if FileManager.default.fileExists(atPath: oldBuildPath.pathString) {
             try localFileSystem.removeFileTree(oldBuildPath)
         }
-        try createSymlink(oldBuildPath, pointingAt: plan.buildParameters.buildPath, relative: true)
+        try FileManager.default.createSymbolicLink(atPath: oldBuildPath.pathString, withDestinationPath: plan.buildParameters.buildPath.pathString)
     }
 
     func runLLBuild(manifest: AbsolutePath, llbuildTarget: String) throws {
@@ -650,6 +654,7 @@ public class SwiftTool<Options: ToolOptions> {
     }
 
     func runLLBuildAsExecutable(manifest: AbsolutePath, llbuildTarget: String) throws {
+#if false
         // Create a temporary directory for the build process.
         let tempDirName = "org.swift.swiftpm.\(NSUserName())"
         let tempDir = try determineTempDirectory().appending(component: tempDirName)
@@ -701,6 +706,7 @@ public class SwiftTool<Options: ToolOptions> {
         guard result.exitStatus == .terminated(code: 0) else {
             throw ProcessResult.Error.nonZeroExit(result)
         }
+#endif
     }
 
     /// Return the build parameters.
@@ -818,12 +824,14 @@ private func findPackageRoot() -> AbsolutePath? {
     }
     // FIXME: It would be nice to move this to a generalized method which takes path and predicate and
     // finds the lowest path for which the predicate is true.
+#if false
     while !isFile(root.appending(component: Manifest.filename)) {
         root = root.parentDirectory
         guard !root.isRoot else {
             return nil
         }
     }
+#endif
     return root
 }
 

@@ -651,6 +651,7 @@ public final class PackageBuilder {
 
         // Walk each path and form our set of possible source files.
         for pathToWalk in pathsToWalk {
+#if false
             let contents = try walk(pathToWalk, fileSystem: fileSystem, recursing: { path in
                 // Exclude the public header directory.
                 if path == publicHeadersPath { return false }
@@ -667,6 +668,7 @@ public final class PackageBuilder {
                 return true
             }).map({$0})
             walked.formUnion(contents)
+#endif
         }
 
         // Make sure there is no modulemap mixed with the sources.

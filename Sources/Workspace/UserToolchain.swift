@@ -15,6 +15,7 @@ import Build
 import PackageLoading
 import protocol Build.Toolchain
 import SPMUtility
+import Foundation
 
 #if os(macOS)
 private let whichArgs: [String] = ["xcrun", "--find"]
@@ -81,7 +82,13 @@ public final class UserToolchain: Toolchain {
         // for now but we shouldn't need to resolve the symlink.  We need to lay
         // down symlinks to runtimes in our fake toolchain as part of the
         // bootstrap script.
-        let swiftCompiler = resolveSymlinks(self.swiftCompiler)
+        var destination: String = ""
+        do {
+            destination = try FileManager.default.destinationOfSymbolicLink(atPath: self.swiftCompiler.pathString)
+        } catch {
+        }
+
+        let swiftCompiler = AbsolutePath(destination)
 
         let runtime = swiftCompiler.appending(
             RelativePath("../../lib/swift/clang/lib/darwin/libclang_rt.\(sanitizer.shortName)_osx_dynamic.dylib"))

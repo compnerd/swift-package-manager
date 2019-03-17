@@ -10,6 +10,7 @@
 
 import Basic
 import PackageModel
+import Foundation
 
 /// Create an initial template package.
 public final class InitPackage {
@@ -77,7 +78,7 @@ public final class InitPackage {
 
     private func writeManifestFile() throws {
         let manifest = destinationPath.appending(component: Manifest.filename)
-        guard exists(manifest) == false else {
+        guard FileManager.default.fileExists(atPath: manifest.pathString) else {
             throw InitError.manifestAlreadyExists
         }
 
@@ -144,7 +145,7 @@ public final class InitPackage {
 
     private func writeREADMEFile() throws {
         let readme = destinationPath.appending(component: "README.md")
-        guard exists(readme) == false else {
+        guard !FileManager.default.fileExists(atPath: readme.pathString) else {
             return
         }
 
@@ -160,7 +161,7 @@ public final class InitPackage {
 
     private func writeGitIgnore() throws {
         let gitignore = destinationPath.appending(component: ".gitignore")
-        guard exists(gitignore) == false else {
+        guard !FileManager.default.fileExists(atPath: gitignore.pathString) else {
             return
         }
 
@@ -180,18 +181,18 @@ public final class InitPackage {
             return
         }
         let sources = destinationPath.appending(component: "Sources")
-        guard exists(sources) == false else {
+        guard !FileManager.default.fileExists(atPath: sources.pathString) else {
             return
         }
         progressReporter?("Creating \(sources.relative(to: destinationPath))/")
-        try makeDirectories(sources)
+        try FileManager.default.createDirectory(atPath: sources.pathString, withIntermediateDirectories: true)
 
         if packageType == .empty {
             return
         }
         
         let moduleDir = sources.appending(component: "\(pkgname)")
-        try makeDirectories(moduleDir)
+        try FileManager.default.createDirectory(atPath: moduleDir.pathString, withIntermediateDirectories: true)
         
         let sourceFileName = (packageType == .executable) ? "main.swift" : "\(typeName).swift"
         let sourceFile = moduleDir.appending(RelativePath(sourceFileName))
@@ -221,7 +222,7 @@ public final class InitPackage {
             return
         }
         let modulemap = destinationPath.appending(component: "module.modulemap")
-        guard exists(modulemap) == false else {
+        guard !FileManager.default.fileExists(atPath: modulemap.pathString) else {
             return
         }
 
@@ -242,11 +243,11 @@ public final class InitPackage {
             return
         }
         let tests = destinationPath.appending(component: "Tests")
-        guard exists(tests) == false else {
+        guard !FileManager.default.fileExists(atPath: tests.pathString) else {
             return
         }
         progressReporter?("Creating \(tests.relative(to: destinationPath))/")
-        try makeDirectories(tests)
+        try FileManager.default.createDirectory(atPath: tests.pathString, withIntermediateDirectories: true)
 
         switch packageType {
         case .systemModule, .empty: break
@@ -352,7 +353,7 @@ public final class InitPackage {
     private func writeTestFileStubs(testsPath: AbsolutePath) throws {
         let testModule = testsPath.appending(RelativePath(pkgname + Target.testModuleNameSuffix))
         progressReporter?("Creating \(testModule.relative(to: destinationPath))/")
-        try makeDirectories(testModule)
+        try FileManager.default.createDirectory(atPath: testModule.pathString, withIntermediateDirectories: true)
 
         let testClassFile = testModule.appending(RelativePath("\(moduleName)Tests.swift"))
         switch packageType {

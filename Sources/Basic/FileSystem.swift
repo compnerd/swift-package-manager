@@ -84,6 +84,48 @@ extension FileSystemError {
     }
 }
 
+public struct FileInfo: Equatable, Codable {
+    /// File timestamp wrapper.
+    public struct FileTimestamp: Equatable, Codable {
+        public let seconds: UInt64
+        public let nanoseconds: UInt64
+    }
+
+    /// File system entity kind.
+    public enum Kind {
+        case file, directory, symlink, blockdev, chardev, socket, unknown
+    }
+
+    /// The device number.
+    public let device: UInt64
+
+    /// The inode number.
+    public let inode: UInt64
+
+    /// The mode flags of the file.
+    public let mode: UInt64
+
+    /// The size of the file.
+    public let size: UInt64
+
+    /// The modification time of the file.
+    public let modTime: FileTimestamp
+
+    /// Kind of file system entity.
+    public var kind: Kind {
+        return .unknown
+    }
+
+    public init(from attributes: [FileAttributeKey:Any]) {
+      // TODO(compnerd) map attributes
+      self.device = 0
+      self.inode = 0
+      self.mode = 0
+      self.size = 0
+      self.modTime = FileTimestamp(seconds: 0, nanoseconds: 0)
+    }
+}
+
 /// Defines the file modes.
 public enum FileMode {
 
@@ -242,31 +284,46 @@ public extension FileSystem {
 private class LocalFileSystem: FileSystem {
 
     func isExecutableFile(_ path: AbsolutePath) -> Bool {
-        guard let filestat = try? POSIX.stat(path.pathString) else {
-            return false
-        }
-        return filestat.st_mode & SPMLibc.S_IXUSR != 0 && filestat.st_mode & S_IFREG != 0
+        return FileManager.default.isExecutableFile(atPath: path.pathString)
     }
 
     func exists(_ path: AbsolutePath, followSymlink: Bool) -> Bool {
-        return Basic.exists(path, followSymlink: followSymlink)
+        if followSymlink {
+            return FileManager.default.fileExists(atPath: URL(fileURLWithPath: path.pathString).path)
+        } else {
+            return FileManager.default.fileExists(atPath: path.pathString)
+        }
     }
 
     func isDirectory(_ path: AbsolutePath) -> Bool {
-        return Basic.isDirectory(path)
+        var isDirectory: ObjCBool = false
+        let exists: Bool = FileManager.default.fileExists(atPath: path.pathString, isDirectory: &isDirectory)
+        return exists && isDirectory.boolValue
     }
 
     func isFile(_ path: AbsolutePath) -> Bool {
-        return Basic.isFile(path)
+        var isDirectory: ObjCBool = false
+        let exists: Bool = FileManager.default.fileExists(atPath: path.pathString, isDirectory: &isDirectory)
+        return exists && !isDirectory.boolValue
     }
 
     func isSymlink(_ path: AbsolutePath) -> Bool {
-        return Basic.isSymlink(path)
+      do {
+          let attributes = try FileManager.default.attributesOfItem(atPath: path.pathString)
+          if let type = attributes[.type] as? FileAttributeType { return type == .typeSymbolicLink }
+          return false
+      } catch {
+          return false
+      }
     }
 
     func getFileInfo(_ path: AbsolutePath, followSymlink: Bool = true) throws -> FileInfo {
-        let statBuf = try stat(path, followSymlink: followSymlink)
-        return FileInfo(statBuf)
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: path.pathString)
+            return FileInfo(from: attributes)
+        } catch let error as NSError {
+            throw FileSystemError(errno: Int32(error.code))
+        }
     }
 
     var currentWorkingDirectory: AbsolutePath? {
@@ -275,72 +332,23 @@ private class LocalFileSystem: FileSystem {
     }
 
     var homeDirectory: AbsolutePath {
-        return AbsolutePath(NSHomeDirectory())
+        return AbsolutePath(FileManager.default.homeDirectoryForCurrentUser.path)
     }
 
     func getDirectoryContents(_ path: AbsolutePath) throws -> [String] {
-        guard let dir = SPMLibc.opendir(path.pathString) else {
-            throw FileSystemError(errno: errno)
+        do {
+            return try FileManager.default.contentsOfDirectory(atPath: path.pathString)
+        } catch let error as NSError {
+            throw FileSystemError(errno: Int32(error.code))
         }
-        defer { _ = SPMLibc.closedir(dir) }
-
-        var result: [String] = []
-        var entry = dirent()
-
-        while true {
-            var entryPtr: UnsafeMutablePointer<dirent>? = nil
-
-            let readdir_rErrno = readdir_r(dir, &entry, &entryPtr)
-            if  readdir_rErrno != 0 {
-                throw FileSystemError(errno: readdir_rErrno)
-            }
-
-            // If the entry pointer is null, we reached the end of the directory.
-            if entryPtr == nil {
-                break
-            }
-
-            // Otherwise, the entry pointer should point at the storage we provided.
-            assert(entryPtr == &entry)
-
-            // Add the entry to the result.
-            guard let name = entry.name else {
-                throw FileSystemError.invalidEncoding
-            }
-
-            // Ignore the pseudo-entries.
-            if name == "." || name == ".." {
-                continue
-            }
-
-            result.append(name)
-        }
-
-        return result
     }
 
     func createDirectory(_ path: AbsolutePath, recursive: Bool) throws {
         // Try to create the directory.
-        let result = mkdir(path.pathString, SPMLibc.S_IRWXU | SPMLibc.S_IRWXG)
-
-        // If it succeeded, we are done.
-        if result == 0 { return }
-
-        // If the failure was because the directory exists, everything is ok.
-        if errno == EEXIST && isDirectory(path) { return }
-
-        // If it failed due to ENOENT (e.g., a missing parent), and we are
-        // recursive, then attempt to create the parent and retry.
-        if errno == ENOENT && recursive &&
-           path != path.parentDirectory /* FIXME: Need Path.isRoot */ {
-            // Attempt to create the parent.
-            try createDirectory(path.parentDirectory, recursive: true)
-
-            // Re-attempt creation, non-recursively.
-            try createDirectory(path, recursive: false)
-        } else {
-            // Otherwise, we failed due to some other error. Report it.
-            throw FileSystemError(errno: errno)
+        do {
+            try FileManager.default.createDirectory(atPath: path.pathString, withIntermediateDirectories: recursive)
+        } catch let error as NSError {
+            throw FileSystemError(errno: Int32(error.code))
         }
     }
 

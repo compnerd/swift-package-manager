@@ -16,7 +16,9 @@ import Basic
 private var wasInterrupted = false
 private var wasInterruptedLock = Lock()
 private var signalWatchingPipe: [Int32] = [0, 0]
+#if false
 private var oldAction = sigaction()
+#endif
 
 /// This class can be used by command line tools to install a handler which
 /// should be called when a interrupt signal is delivered to the process.
@@ -27,6 +29,7 @@ public final class InterruptHandler {
 
     /// Start watching for interrupt signal and call the handler whenever the signal is received.
     public init(_ handler: @escaping () -> Void) throws {
+#if false
         // Create a signal handler.
         let signalHandler: @convention(c)(Int32) -> Void = { _ in
             // Turn on the interrupt bool.
@@ -75,12 +78,16 @@ public final class InterruptHandler {
             close(signalWatchingPipe[0])
         }
         thread.start()
+#endif
+          thread = Thread { }
     }
 
     deinit {
+#if false
         // Restore the old action and close the write end of pipe.
         sigaction(SIGINT, &oldAction, nil)
         close(signalWatchingPipe[1])
         thread.join()
+#endif
     }
 }

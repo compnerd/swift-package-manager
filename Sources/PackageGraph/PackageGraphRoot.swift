@@ -125,12 +125,12 @@ extension PackageDependencyDescription.Requirement {
             return .versionSet(.range(range))
 
         case .revision(let identifier):
-            assert(Git.checkRefFormat(ref: identifier))
+            // assert(Git.checkRefFormat(ref: identifier))
 
             return .revision(identifier)
 
         case .branch(let identifier):
-            assert(Git.checkRefFormat(ref: identifier))
+            // assert(Git.checkRefFormat(ref: identifier))
 
             return .revision(identifier)
 

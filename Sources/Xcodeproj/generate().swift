@@ -15,6 +15,7 @@ import PackageModel
 import PackageLoading
 import SourceControl
 import SPMUtility
+import Foundation
 
 public struct XcodeprojOptions {
     /// The build flags.
@@ -72,7 +73,7 @@ public func generate(
     projectName: String,
     xcodeprojPath: AbsolutePath,
     graph: PackageGraph,
-    repositoryProvider: RepositoryProvider = GitRepositoryProvider(),
+    repositoryProvider: RepositoryProvider, // = GitRepositoryProvider(),
     options: XcodeprojOptions,
     diagnostics: DiagnosticsEngine
 ) throws -> Xcode.Project {
@@ -85,8 +86,8 @@ public func generate(
     let schemesDir = xcodeprojPath.appending(components: "xcshareddata", "xcschemes")
 
     // Create the .xcodeproj wrapper directory.
-    try makeDirectories(xcodeprojPath)
-    try makeDirectories(schemesDir)
+    try FileManager.default.createDirectory(atPath: xcodeprojPath.pathString, withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(atPath: schemesDir.pathString, withIntermediateDirectories: true)
 
     let extraDirs: [AbsolutePath]
     var extraFiles = [AbsolutePath]()
@@ -186,6 +187,7 @@ func open(_ path: AbsolutePath, body: ((String) -> Void) throws -> Void) throws 
 /// Finds directories that will be added as blue folder
 /// Excludes hidden directories, Xcode projects and reserved directories
 func findDirectoryReferences(path: AbsolutePath) throws -> [AbsolutePath] {
+#if false
     let rootDirectories = try walk(path, recursively: false)
 
     return rootDirectories.filter({
@@ -195,6 +197,8 @@ func findDirectoryReferences(path: AbsolutePath) throws -> [AbsolutePath] {
         if PackageBuilder.predefinedTestDirectories.contains($0.basename) { return false }
         return isDirectory($0)
     })
+#endif
+    return []
 }
 
 func generateSchemes(
@@ -272,6 +276,7 @@ func getExtraFilesFor(package: ResolvedPackage, in workingCheckout: WorkingCheck
 ///   - path: The path of the directory to get the files from
 ///   - recursively: Specifies if the directory at `path` should be searched recursively
 func findNonSourceFiles(path: AbsolutePath, manifestVersion: ManifestVersion, recursively: Bool = false) throws -> [AbsolutePath] {
+#if false
     let filesFromPath = try walk(path, recursively: recursively)
 
     return filesFromPath.filter({
@@ -283,4 +288,6 @@ func findNonSourceFiles(path: AbsolutePath, manifestVersion: ManifestVersion, re
         }
         return true
     })
+#endif
+    return []
 }

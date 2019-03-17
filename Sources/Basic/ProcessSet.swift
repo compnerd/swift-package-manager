@@ -64,6 +64,7 @@ public final class ProcessSet {
     /// Terminate all the processes. This method blocks until all processes in the set are terminated.
     ///
     /// A process set cannot be used once it has been asked to terminate.
+#if false
     public func terminate() {
         // Mark a process set as cancelled.
         serialQueue.sync {
@@ -107,8 +108,10 @@ public final class ProcessSet {
         // Join the kill thread so we don't exit before everything terminates.
         thread.join()
     }
+#endif
 
     /// Sends signal to all processes in the set.
+#if false
     private func signalAll(_ signal: Int32) {
         serialQueue.sync {
             // Signal all active processes.
@@ -117,4 +120,5 @@ public final class ProcessSet {
             }
         }
     }
+#endif
 }

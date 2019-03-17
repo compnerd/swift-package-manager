@@ -10,6 +10,7 @@
 
 import Basic
 import PackageModel
+import Foundation
 
 public protocol Toolchain {
     /// Path of the `swiftc` compiler.
@@ -41,12 +42,22 @@ extension Toolchain {
         return nil
     }
 
-    public var macosSwiftStdlib: AbsolutePath { 
-        return resolveSymlinks(swiftCompiler).appending(RelativePath("../../lib/swift/macosx"))
+    public var macosSwiftStdlib: AbsolutePath {
+        var destination: String = ""
+        do {
+            destination = try FileManager.default.destinationOfSymbolicLink(atPath: swiftCompiler.appending(RelativePath("../../lib/swift/macosx")).pathString)
+        } catch {
+        }
+        return AbsolutePath(destination)
     }
 
     var toolchainLibDir: AbsolutePath {
         // FIXME: Not sure if it's better to base this off of Swift compiler or our own binary.
-        return resolveSymlinks(swiftCompiler).appending(RelativePath("../../lib"))
+        var destination: String = ""
+        do {
+            destination = try FileManager.default.destinationOfSymbolicLink(atPath: swiftCompiler.appending(RelativePath("../../lib")).pathString)
+        } catch {
+        }
+        return AbsolutePath(destination)
     }
 }

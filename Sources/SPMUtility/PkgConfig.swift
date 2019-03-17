@@ -64,6 +64,7 @@ struct PCFileFinder {
     /// from the standard locations that we are currently searching.
     public init (diagnostics: DiagnosticsEngine, brewPrefix: AbsolutePath?) {
         self.diagnostics = diagnostics
+#if false
         if PCFileFinder.pkgConfigPaths == nil {
             do {
                 let pkgConfigPath: String
@@ -80,6 +81,7 @@ struct PCFileFinder {
                 PCFileFinder.pkgConfigPaths = []
             }
         }
+#endif
     }
 
     public func locatePCFile(

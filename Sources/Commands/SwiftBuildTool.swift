@@ -88,6 +88,7 @@ public class SwiftBuildTool: SwiftTool<BuildToolOptions> {
     }
 
     private func checkClangVersion() {
+#if false
         // We only care about this on Ubuntu 14.04
         guard let uname = try? Process.checkNonZeroExit(args: "lsb_release", "-r").spm_chomp(),
               uname.hasSuffix("14.04"),
@@ -99,6 +100,7 @@ public class SwiftBuildTool: SwiftTool<BuildToolOptions> {
         if clang < Version(3, 6, 0) {
             print("warning: minimum recommended clang is version 3.6, otherwise you may encounter linker errors.")
         }
+#endif
     }
 }
 

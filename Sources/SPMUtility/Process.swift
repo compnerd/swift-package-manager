@@ -12,7 +12,8 @@ import Basic
 
 extension Process {
     @discardableResult
-    static public func checkNonZeroExit(arguments: [String], environment: [String: String] = env, diagnostics: DiagnosticsEngine) throws -> String {
+    static public func checkNonZeroExit(arguments: [String], environment: [String: String] = env, diagnostics: DiagnosticsEngine? = nil) throws -> String {
+#if false
         let process = Process(arguments: arguments, environment: environment, outputRedirection: .collect)
         try process.launch()
         let result = try process.waitUntilExit()
@@ -22,5 +23,7 @@ extension Process {
             throw Diagnostics.fatalError
         }
         return try result.utf8Output()
+#endif
+          return ""
     }
 }

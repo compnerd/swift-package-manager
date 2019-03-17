@@ -112,6 +112,7 @@ public final class TerminalController {
             return width
         }
 
+#if false
         // Try determining using ioctl.
         // Following code does not compile on ppc64le well. TIOCGWINSZ is
         // defined in system ioctl.h file which needs to be used. This is
@@ -121,6 +122,7 @@ public final class TerminalController {
         if ioctl(1, UInt(TIOCGWINSZ), &ws) == 0 {
             return Int(ws.ws_col)
         }
+#endif
 #endif
         return nil
     }

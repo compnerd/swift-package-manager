@@ -25,6 +25,7 @@ public enum Platform {
     public static var currentPlatform = Platform.findCurrentPlatform()
     /// Attempt to match `uname` with recognized platforms.
     private static func findCurrentPlatform() -> Platform? {
+#if false
         guard let uname = try? Process.checkNonZeroExit(args: "uname").spm_chomp().lowercased() else { return nil }
         switch uname {
         case "darwin":
@@ -36,6 +37,7 @@ public enum Platform {
         default:
             return nil
         }
+#endif
         return nil
     }
 
@@ -61,6 +63,7 @@ public enum Platform {
     ///
     /// - Note: This method returns `nil` if the value is an invalid path.
     private static func getConfstr(_ name: Int32) -> AbsolutePath? {
+#if false
         let len = confstr(name, nil, 0)
         let tmp = UnsafeMutableBufferPointer(start: UnsafeMutablePointer<Int8>.allocate(capacity: len), count:len)
         defer { tmp.deallocate() }
@@ -68,5 +71,7 @@ public enum Platform {
         let value = String(cString: tmp.baseAddress!)
         guard value.hasSuffix(AbsolutePath.root.pathString) else { return nil }
         return resolveSymlinks(AbsolutePath(value))
+#endif
+          return nil
     }
 }

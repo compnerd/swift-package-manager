@@ -568,10 +568,12 @@ func xcodeProject(
             let includeDir = clangTarget.includeDir
             let includeGroup = makeGroup(for: includeDir)
             // FIXME: Support C++ headers.
+#if false
             for header in try walk(includeDir, fileSystem: fileSystem) where header.extension == "h" {
                 let group = makeGroup(for: header.parentDirectory)
                 group.addFileReference(path: header.basename)
             }
+#endif
 
             // Disable defines target for clang target because our clang targets are not proper framework targets.
             // Also see: <rdar://problem/29825757>

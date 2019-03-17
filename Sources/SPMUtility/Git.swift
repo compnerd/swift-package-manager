@@ -59,6 +59,7 @@ public class Git {
     /// A shell command to run for Git. Can be either a name or a path.
     public static var tool: String = "git"
 
+#if false
     /// Returns true if the git reference name is well formed.
     public static func checkRefFormat(ref: String) -> Bool {
         do {
@@ -68,6 +69,7 @@ public class Git {
             return false
         }
     }
+#endif
 
     /// Returns the environment variables for launching the git subprocess.
     ///

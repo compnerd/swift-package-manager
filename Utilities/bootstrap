@@ -588,16 +588,17 @@ class llbuild(object):
                     link_command.extend([])
 
                 for lib in target.extra_libs:
-                    link_command.extend(["-Xlinker", "-l%s" % (lib,)])
+                    link_command.extend(["-l%s" % (lib,)])
                 if self.args.foundation_path:
                     link_command.extend(["-L", self.args.foundation_path])
                 if self.args.libdispatch_build_dir:
-                    link_command.extend(['-L', self.args.libdispatch_build_dir,
-                                         '-Xlinker', '-lBlocksRuntime'])
+                    link_command.extend(['-L', self.args.libdispatch_build_dir, '-lBlocksRuntime'])
                     link_command.extend(["-L", os.path.join(self.args.libdispatch_build_dir, "src")])
 
                 # Add llbuild link flags.
                 link_command.extend(llbuild_link_args(self.args))
+
+                link_command.extend(["-LS:\\b\\sqlite"])
 
             # Write out the link command.
             if target.is_library:
@@ -852,9 +853,10 @@ def llbuild_link_args(args):
     llbuild_libdir = llbuild_lib_path(args)
     if args.llbuild_link_framework:
         build_flags.extend(["-Xlinker", "-F%s" % llbuild_libdir])
-    else: 
-        build_flags.extend(["-Xlinker", "-L%s" % llbuild_libdir])
-    build_flags.extend(["-Xlinker", "-rpath", "-Xlinker", llbuild_libdir])
+    else:
+        build_flags.extend(["-L%s" % llbuild_libdir])
+    if not platform.system() == 'Windows':
+        build_flags.extend(["-Xlinker", "-rpath", "-Xlinker", llbuild_libdir])
     return build_flags
 
 def write_self_hosting_script(path, args):
@@ -1295,7 +1297,7 @@ def main():
             error("unknown platform")
 
         # Library search path.
-        build_flags.extend(["-Xlinker", "-L{}".format(faketoolchain_libdir)])
+        build_flags.extend(["-L{}".format(faketoolchain_libdir)])
 
         # Add an RPATH, so that the tests can be run directly.
         build_flags.extend(["-Xlinker", "-rpath", "-Xlinker", faketoolchain_libdir])

@@ -18,10 +18,12 @@ import Foundation
 ///   - path: Absolute path to the executable.
 ///   - args: The executable arguments.
 public func exec(path: String, args: [String]) throws {
+#if false
     let cArgs = CStringArray(args)
     guard execv(path, cArgs.cArray) != -1 else {
         throw POSIX.SystemError.exec(errno, path: path, args: args)
     }
+#endif
 }
 
 // MARK: Utility function for searching for executables

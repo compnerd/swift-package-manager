@@ -328,7 +328,7 @@ public class Workspace {
         delegate: WorkspaceDelegate? = nil,
         config: SwiftPMConfig = SwiftPMConfig(),
         fileSystem: FileSystem = localFileSystem,
-        repositoryProvider: RepositoryProvider = GitRepositoryProvider(),
+        repositoryProvider: RepositoryProvider? = nil,
         isResolverPrefetchingEnabled: Bool = false,
         enablePubgrubResolver: Bool = false,
         skipUpdate: Bool = false
@@ -347,7 +347,7 @@ public class Workspace {
         let repositoriesPath = self.dataPath.appending(component: "repositories")
         self.repositoryManager = RepositoryManager(
             path: repositoriesPath,
-            provider: repositoryProvider,
+            provider: repositoryProvider!,
             delegate: delegate.map(WorkspaceRepositoryManagerDelegate.init(workspaceDelegate:)),
             fileSystem: fileSystem)
         self.checkoutsPath = self.dataPath.appending(component: "checkouts")
@@ -788,7 +788,7 @@ extension Workspace {
                 // FIXME: We should probably just warn in case we fail to create
                 // this symlink, which could happen if there is some non-symlink
                 // entry at this location.
-                try createSymlink(symLinkPath, pointingAt: path, relative: false)
+                try FileManager.default.createSymbolicLink(atPath: symLinkPath.pathString, withDestinationPath: path.pathString)
             }
         }
 

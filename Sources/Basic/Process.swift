@@ -51,6 +51,7 @@ public struct ProcessResult: CustomStringConvertible {
     /// Create an instance using a POSIX process exit status code and output result.
     ///
     /// See `waitpid(2)` for information on the exit status code.
+#if false
     public init(
         arguments: [String],
         exitStatusCode: Int32,
@@ -67,6 +68,7 @@ public struct ProcessResult: CustomStringConvertible {
         self.init(arguments: arguments, exitStatus: exitStatus, output: output,
             stderrOutput: stderrOutput)
     }
+#endif
 
     /// Create an instance using an exit status and output result.
     public init(
@@ -138,9 +140,10 @@ public final class Process: ObjectIdentifierProtocol {
         }
     }
 
+#if false
     /// Typealias for process id type.
     public typealias ProcessID = pid_t
-    
+#endif    
     /// Typealias for stdout/stderr output closure.
     public typealias OutputClosure = ([UInt8]) -> Void
 
@@ -161,8 +164,10 @@ public final class Process: ObjectIdentifierProtocol {
     /// The environment with which the process was executed.
     public let environment: [String: String]
 
+#if false
     /// The process id of the spawned process, available after the process is launched.
     public private(set) var processID = ProcessID()
+#endif
 
     /// If the subprocess has launched.
     /// Note: This property is not protected by the serial queue because it is only mutated in `launch()`, which will be
@@ -252,6 +257,7 @@ public final class Process: ObjectIdentifierProtocol {
 
     /// Launch the subprocess.
     public func launch() throws {
+#if false
         precondition(arguments.count > 0 && !arguments[0].isEmpty, "Need at least one argument to launch the process.")
         precondition(!launched, "It is not allowed to launch the same process object again.")
 
@@ -383,8 +389,10 @@ public final class Process: ObjectIdentifierProtocol {
             thread.start()
             self.stderr.thread = thread
         }
+#endif
     }
 
+#if false
     /// Blocks the calling process until the subprocess finishes execution.
     @discardableResult
     public func waitUntilExit() throws -> ProcessResult {
@@ -421,7 +429,9 @@ public final class Process: ObjectIdentifierProtocol {
             return executionResult
         }
     }
+#endif
 
+#if false
     /// Reads the given fd and returns its result.
     ///
     /// Closes the fd before returning.
@@ -458,7 +468,9 @@ public final class Process: ObjectIdentifierProtocol {
         // Construct the output result.
         return error.map(Result.init) ?? Result(out)
     }
+#endif
 
+#if false
     /// Send a signal to the process.
     ///
     /// Note: This will signal all processes in the process group.
@@ -466,9 +478,11 @@ public final class Process: ObjectIdentifierProtocol {
         assert(launched, "The process is not yet launched.")
         _ = SPMLibc.kill(startNewProcessGroup ? -processID : processID, signal)
     }
+#endif
 }
 
 extension Process {
+#if false
     /// Execute a subprocess and block until it finishes execution
     ///
     /// - Parameters:
@@ -487,6 +501,7 @@ extension Process {
     static public func popen(args: String..., environment: [String: String] = env) throws -> ProcessResult {
         return try Process.popen(arguments: args, environment: environment)
     }
+#endif
 
     /// Execute a subprocess and get its (UTF-8) output if it has a non zero exit.
     ///
@@ -495,6 +510,7 @@ extension Process {
     ///   - environment: The environment to pass to subprocess. By default the current process environment
     ///     will be inherited.
     /// - Returns: The process output (stdout + stderr).
+#if false
     @discardableResult
     static public func checkNonZeroExit(arguments: [String], environment: [String: String] = env) throws -> String {
         let process = Process(arguments: arguments, environment: environment, outputRedirection: .collect)
@@ -506,11 +522,14 @@ extension Process {
         }
         return try result.utf8Output()
     }
+#endif
 
+#if false
     @discardableResult
     static public func checkNonZeroExit(args: String..., environment: [String: String] = env) throws -> String {
         return try checkNonZeroExit(arguments: args, environment: environment)
     }
+#endif
 
     public convenience init(args: String..., environment: [String: String] = env, outputRedirection: OutputRedirection = .collect) {
         self.init(arguments: args, environment: environment, outputRedirection: outputRedirection)
@@ -519,6 +538,7 @@ extension Process {
 
 // MARK: - Private helpers
 
+#if false
 #if os(macOS)
 private typealias swiftpm_posix_spawn_file_actions_t = posix_spawn_file_actions_t?
 #else
@@ -544,7 +564,9 @@ private func WEXITSTATUS(_ status: Int32) -> Int32 {
 private func WTERMSIG(_ status: Int32) -> Int32 {
     return status & 0x7f
 }
+#endif
 
+#if false
 /// Open the given pipe.
 private func open(pipe: inout [Int32]) throws {
     let rv = SPMLibc.pipe(&pipe)
@@ -552,6 +574,7 @@ private func open(pipe: inout [Int32]) throws {
         throw SystemError.pipe(rv)
     }
 }
+#endif
 
 /// Close the given fd.
 private func close(fd: inout Int32) throws {

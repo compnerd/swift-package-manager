@@ -354,6 +354,7 @@ public class SwiftTestTool: SwiftTool<TestToolOptions> {
 
     /// Exports profdata as a JSON file.
     private func exportCodeCovAsJSON(filename: String, testBinary: AbsolutePath) throws {
+#if false
         // Export using the llvm-cov tool.
         let llvmCov = try getToolchain().getLLVMCov()
         let buildParameters = try self.buildParameters()
@@ -368,6 +369,7 @@ public class SwiftTestTool: SwiftTool<TestToolOptions> {
         // Write to a file.
         let jsonPath = buildParameters.codeCovPath.appending(component:  filename + ".json")
         try localFileSystem.writeFileContents(jsonPath, bytes: ByteString(result.output.dematerialize()))
+#endif
     }
 
     /// Builds the "test" target if enabled in options.
@@ -447,15 +449,15 @@ public class SwiftTestTool: SwiftTool<TestToolOptions> {
             relativeTo: localFileSystem.currentWorkingDirectory!).parentDirectory
         // XCTestHelper tool is installed in libexec.
         let maybePath = binDirectory.parentDirectory.appending(components: "libexec", "swift", "pm", xctestHelperBin)
-        if isFile(maybePath) {
-            return maybePath
-        }
+        // if isFile(maybePath) {
+        //     return maybePath
+        // }
         // This will be true during swiftpm development.
         // FIXME: Factor all of the development-time resource location stuff into a common place.
         let path = binDirectory.appending(component: xctestHelperBin)
-        if isFile(path) {
-            return path
-        }
+        // if isFile(path) {
+        //     return path
+        // }
         fatalError("XCTestHelper binary not found.")
     }
 
@@ -602,6 +604,7 @@ final class TestRunner {
         var output = ""
         var success = false
         do {
+#if false
             // FIXME: The environment will be constructed for every test when using the
             // parallel test runner. We should do some kind of caching.
             let env = try constructTestEnvironment(toolchain: toolchain, options: self.options, buildParameters: self.buildParameters)
@@ -616,6 +619,7 @@ final class TestRunner {
                 output += "\n" + exitSignalText(code: signal)
             default: break
             }
+#endif
         } catch {
             diagnostics.emit(error)
         }
@@ -625,6 +629,7 @@ final class TestRunner {
     /// Executes and returns execution status. Prints test output on standard streams.
     func test() -> Bool {
         do {
+#if false
             let env = try constructTestEnvironment(toolchain: toolchain, options: self.options, buildParameters: self.buildParameters)
             let process = Process(arguments: try args(), environment: env, outputRedirection: .none)
             try processSet.add(process)
@@ -637,6 +642,7 @@ final class TestRunner {
                 print(exitSignalText(code: signal))
             default: break
             }
+#endif
         } catch {
             diagnostics.emit(error)
         }
