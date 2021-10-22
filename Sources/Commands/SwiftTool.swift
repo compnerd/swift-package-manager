@@ -26,6 +26,10 @@ import TSCUtility
 import Workspace
 import XCBuildSupport
 
+#if os(Windows)
+import WinSDK
+#endif
+
 typealias Diagnostic = TSCBasic.Diagnostic
 
 private class ToolWorkspaceDelegate: WorkspaceDelegate {
@@ -297,6 +301,10 @@ public class SwiftTool {
     /// The current build system reference. The actual reference is present only during an active build.
     let buildSystemRef: BuildSystemRef
 
+#if os(Windows)
+    static var storage: (ProcessSet, BuildSystemRef)?
+#endif
+
     /// The execution status of the tool.
     var executionStatus: ExecutionStatus = .success
 
@@ -341,6 +349,22 @@ public class SwiftTool {
             let buildSystemRef = BuildSystemRef()
 
             // trap SIGINT to terminate sub-processes, etc
+#if os(Windows)
+            _ = SetConsoleCtrlHandler({ _ in
+                // Terminate all processes on receiving an interrupt signal.
+                SwiftTool.storage?.0.terminate()
+                SwiftTool.storage?.1.buildSystem?.cancel()
+
+                // Reset the handler.
+                _ = SetConsoleCtrlHandler(nil, false)
+
+                // Exit as if by signal()
+                TerminateProcess(GetCurrentProcess(), 3)
+
+                return true
+            }, true)
+            SwiftTool.storage = (processSet, buildSystemRef)
+#else
             signal(SIGINT, SIG_IGN)
             let interruptSignalSource = DispatchSource.makeSignalSource(signal: SIGINT)
             interruptSignalSource.setEventHandler {
@@ -351,10 +375,7 @@ public class SwiftTool {
                 processSet.terminate()
                 buildSystemRef.buildSystem?.cancel()
 
-#if os(Windows)
-                // Exit as if by signal()
-                TerminateProcess(GetCurrentProcess(), 3)
-#elseif os(macOS) || os(OpenBSD)
+#if os(macOS) || os(OpenBSD)
                 // Install the default signal handler.
                 var action = sigaction()
                 action.__sigaction_u.__sa_handler = SIG_DFL
@@ -376,6 +397,7 @@ public class SwiftTool {
 #endif
             }
             interruptSignalSource.resume()
+#endif
 
             self.processSet = processSet
             self.buildSystemRef = buildSystemRef
