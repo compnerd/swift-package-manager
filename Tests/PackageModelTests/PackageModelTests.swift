@@ -75,4 +75,56 @@ class PackageModelTests: XCTestCase {
         "-sdk", sdkDir.pathString,
       ])
   }
+
+  func testWindowsLibrarianSelection() throws {
+    // tiny PE binary from: https://archive.is/w01DO
+    let contents: [UInt8] = [
+      0x4d, 0x5a, 0x00, 0x00, 0x50, 0x45, 0x00, 0x00, 0x4c, 0x01, 0x01, 0x00,
+      0x6a, 0x2a, 0x58, 0xc3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x04, 0x00, 0x03, 0x01, 0x0b, 0x01, 0x08, 0x00, 0x04, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00,
+      0x04, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00,
+      0x04, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x68, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x02,
+    ]
+
+    let triple = try Triple("x86_64-unknown-windows-msvc")
+    let fs = TSCBasic.localFileSystem
+
+    try withTemporaryFile { [contents] vfsPath in
+      try withTemporaryDirectory(removeTreeOnDeinit: true) { [contents] tempDirPath in
+        let binDir = tempDirPath.appending(component: "bin")
+
+        let lld = binDir.appending(component: "lld-link.exe")
+        try fs.writeFileContents(lld, bytes: ByteString(contents))
+
+        let not = binDir.appending(component: "not-a-linker.exe")
+        try fs.writeFileContents(not, bytes: ByteString(contents))
+
+        #if !os(Windows)
+          try fs.chmod(.executable, path: lld, options: [])
+        #endif
+
+        try XCTAssertEqual(
+          UserToolchain.determineLibrarian(
+            triple: triple, binDir: binDir, useXcrun: false, environment: [:], searchPaths: [],
+            extraSwiftFlags: ["-Xswiftc", "-use-ld=lld"]),
+          lld)
+
+        try XCTAssertEqual(
+          UserToolchain.determineLibrarian(
+            triple: triple, binDir: binDir, useXcrun: false, environment: [:], searchPaths: [],
+            extraSwiftFlags: ["-Xswiftc", "-use-ld=not-a-link.exe"]),
+          not)
+
+        try XCTAssertEqual(
+          UserToolchain.determineLibrarian(
+            triple: triple, binDir: binDir, useXcrun: false, environment: [:], searchPaths: [],
+            extraSwiftFlags: ["-Xswiftc", "-use-ld=not-a-link.exe"]),
+          AbsolutePath("link"))
+      }
+    }
+  }
 }

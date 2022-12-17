@@ -126,7 +126,8 @@ public final class UserToolchain: Toolchain {
     triple: Triple, binDir: AbsolutePath,
     useXcrun: Bool,
     environment: EnvironmentVariables,
-    searchPaths: [AbsolutePath]
+    searchPaths: [AbsolutePath],
+    extraSwiftFlags: [String]
   ) throws
     -> AbsolutePath
   {
@@ -142,7 +143,12 @@ public final class UserToolchain: Toolchain {
         {
           return librarian.basename
         }
-        // TODO(5719) use `lld-link` if the build requests lld.
+        // TODO(5719) handle `-Xmanifest` vs `-Xswiftc`
+        // `-use-ld=` is always joined in Swift.
+        if let ld = extraSwiftFlags.first(where: { $0.starts(with: "-use-ld=") }) {
+          let linker = String(ld.split(separator: "=").last!)
+          return linker == "lld" ? "lld-link" : linker
+        }
         return "link"
       }
       // TODO(compnerd) consider defaulting to `llvm-ar` universally with
@@ -438,10 +444,6 @@ public final class UserToolchain: Toolchain {
     var triple =
       destination.targetTriple ?? Triple.getHostTriple(usingSwiftCompiler: swiftCompilers.compile)
 
-    self.librarianPath = try UserToolchain.determineLibrarian(
-      triple: triple, binDir: binDir, useXcrun: useXcrun, environment: environment,
-      searchPaths: envSearchPaths)
-
     // Change the triple to the specified arch if there's exactly one of them.
     // The Triple property is only looked at by the native build system currently.
     if let archs = self.architectures, archs.count == 1 {
@@ -454,6 +456,10 @@ public final class UserToolchain: Toolchain {
 
     self.extraFlags.swiftCompilerFlags = try Self.deriveSwiftCFlags(
       triple: triple, destination: destination, environment: environment)
+
+    self.librarianPath = try UserToolchain.determineLibrarian(
+      triple: triple, binDir: binDir, useXcrun: useXcrun, environment: environment,
+      searchPaths: envSearchPaths, extraSwiftFlags: self.extraFlags.swiftCompilerFlags)
 
     if let sdkDir = destination.sdkRootDir {
       self.extraFlags.cCompilerFlags =
