@@ -14,12 +14,22 @@ import XCTest
 
 class PathTests: XCTestCase {
     func testBasics() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("/").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/a").pathString, #"\a"#)
+        XCTAssertEqual(AbsolutePath("/a/b/c").pathString, #"\a\b\c"#)
+        #else
         XCTAssertEqual(AbsolutePath("/").pathString, "/")
         XCTAssertEqual(AbsolutePath("/a").pathString, "/a")
         XCTAssertEqual(AbsolutePath("/a/b/c").pathString, "/a/b/c")
+        #endif
         XCTAssertEqual(RelativePath(".").pathString, ".")
         XCTAssertEqual(RelativePath("a").pathString, "a")
+        #if os(Windows)
+        XCTAssertEqual(RelativePath("a/b/c").pathString, #"a\b\c"#)
+        #else
         XCTAssertEqual(RelativePath("a/b/c").pathString, "a/b/c")
+        #endif
         XCTAssertEqual(RelativePath("~").pathString, "~")  // `~` is not special
     }
 
@@ -41,7 +51,11 @@ class PathTests: XCTestCase {
 
     func testStringLiteralInitialization() {
         let abs = AbsolutePath("/")
+        #if os(Windows)
+        XCTAssertEqual(abs.pathString, #"\"#)
+        #else
         XCTAssertEqual(abs.pathString, "/")
+        #endif
         let rel1 = RelativePath(".")
         XCTAssertEqual(rel1.pathString, ".")
         let rel2 = RelativePath("~")
@@ -49,17 +63,31 @@ class PathTests: XCTestCase {
     }
 
     func testRepeatedPathSeparators() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("/ab//cd//ef").pathString, #"\ab\cd\ef"#)
+        XCTAssertEqual(AbsolutePath("/ab///cd//ef").pathString, #"\ab\cd\ef"#)
+        XCTAssertEqual(RelativePath("ab//cd//ef").pathString, #"ab\cd\ef"#)
+        XCTAssertEqual(RelativePath("ab//cd///ef").pathString, #"ab\cd\ef"#)
+        #else
         XCTAssertEqual(AbsolutePath("/ab//cd//ef").pathString, "/ab/cd/ef")
         XCTAssertEqual(AbsolutePath("/ab///cd//ef").pathString, "/ab/cd/ef")
         XCTAssertEqual(RelativePath("ab//cd//ef").pathString, "ab/cd/ef")
         XCTAssertEqual(RelativePath("ab//cd///ef").pathString, "ab/cd/ef")
+        #endif
     }
 
     func testTrailingPathSeparators() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("/ab/cd/ef/").pathString, #"\ab\cd\ef"#)
+        XCTAssertEqual(AbsolutePath("/ab/cd/ef//").pathString, #"\ab\cd\ef"#)
+        XCTAssertEqual(RelativePath("ab/cd/ef/").pathString, #"ab\cd\ef"#)
+        XCTAssertEqual(RelativePath("ab/cd/ef//").pathString, #"ab\cd\ef"#)
+        #else
         XCTAssertEqual(AbsolutePath("/ab/cd/ef/").pathString, "/ab/cd/ef")
         XCTAssertEqual(AbsolutePath("/ab/cd/ef//").pathString, "/ab/cd/ef")
         XCTAssertEqual(RelativePath("ab/cd/ef/").pathString, "ab/cd/ef")
         XCTAssertEqual(RelativePath("ab/cd/ef//").pathString, "ab/cd/ef")
+        #endif
     }
 
     func testDotPathComponents() {
@@ -70,6 +98,15 @@ class PathTests: XCTestCase {
     }
 
     func testDotDotPathComponents() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("/..").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/../../../../..").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/abc/..").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/abc/../..").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/../abc").pathString, #"\abc"#)
+        XCTAssertEqual(AbsolutePath("/../abc/..").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/../abc/../def").pathString, #"\def"#)
+        #else
         XCTAssertEqual(AbsolutePath("/..").pathString, "/")
         XCTAssertEqual(AbsolutePath("/../../../../..").pathString, "/")
         XCTAssertEqual(AbsolutePath("/abc/..").pathString, "/")
@@ -77,6 +114,7 @@ class PathTests: XCTestCase {
         XCTAssertEqual(AbsolutePath("/../abc").pathString, "/abc")
         XCTAssertEqual(AbsolutePath("/../abc/..").pathString, "/")
         XCTAssertEqual(AbsolutePath("/../abc/../def").pathString, "/def")
+        #endif
         XCTAssertEqual(RelativePath("..").pathString, "..")
         XCTAssertEqual(RelativePath("../..").pathString, "../..")
         XCTAssertEqual(RelativePath(".././..").pathString, "../..")
@@ -86,8 +124,13 @@ class PathTests: XCTestCase {
     }
 
     func testCombinationsAndEdgeCases() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("///").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/./").pathString, #"\"#)
+        #else
         XCTAssertEqual(AbsolutePath("///").pathString, "/")
         XCTAssertEqual(AbsolutePath("/./").pathString, "/")
+        #endif
         XCTAssertEqual(RelativePath("").pathString, ".")
         XCTAssertEqual(RelativePath(".").pathString, ".")
         XCTAssertEqual(RelativePath("./abc").pathString, "abc")
@@ -108,19 +151,32 @@ class PathTests: XCTestCase {
         XCTAssertEqual(RelativePath("./..").pathString, "..")
         XCTAssertEqual(RelativePath("./../.").pathString, "..")
         XCTAssertEqual(RelativePath("./////../////./////").pathString, "..")
+        #if os(Windows)
+        XCTAssertEqual(RelativePath("../a").pathString, #"..\a"#)
+        #else
         XCTAssertEqual(RelativePath("../a").pathString, "../a")
+        #endif
         XCTAssertEqual(RelativePath("../a/..").pathString, "..")
         XCTAssertEqual(RelativePath("a/..").pathString, ".")
         XCTAssertEqual(RelativePath("a/../////../////./////").pathString, "..")
     }
 
     func testDirectoryNameExtraction() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("/").dirname, #"\"#)
+        XCTAssertEqual(AbsolutePath("/a").dirname, #"\"#)
+        XCTAssertEqual(AbsolutePath("/./a").dirname, #"\"#)
+        XCTAssertEqual(AbsolutePath("/../..").dirname, #"\"#)
+        XCTAssertEqual(AbsolutePath("/ab/c//d/").dirname, #"\ab\c"#)
+        XCTAssertEqual(RelativePath("ab/c//d/").dirname, #"ab\c"#)
+        #else
         XCTAssertEqual(AbsolutePath("/").dirname, "/")
         XCTAssertEqual(AbsolutePath("/a").dirname, "/")
         XCTAssertEqual(AbsolutePath("/./a").dirname, "/")
         XCTAssertEqual(AbsolutePath("/../..").dirname, "/")
         XCTAssertEqual(AbsolutePath("/ab/c//d/").dirname, "/ab/c")
         XCTAssertEqual(RelativePath("ab/c//d/").dirname, "ab/c")
+        #endif
         XCTAssertEqual(RelativePath("../a").dirname, "..")
         XCTAssertEqual(RelativePath("../a/..").dirname, ".")
         XCTAssertEqual(RelativePath("a/..").dirname, ".")
@@ -132,7 +188,11 @@ class PathTests: XCTestCase {
     }
 
     func testBaseNameExtraction() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("/").basename, #"\"#)
+        #else
         XCTAssertEqual(AbsolutePath("/").basename, "/")
+        #endif
         XCTAssertEqual(AbsolutePath("/a").basename, "a")
         XCTAssertEqual(AbsolutePath("/./a").basename, "a")
         XCTAssertEqual(AbsolutePath("/../..").basename, "/")
@@ -148,7 +208,11 @@ class PathTests: XCTestCase {
     }
 
     func testBaseNameWithoutExt() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath("/").basenameWithoutExt, #"\"#)
+        #else
         XCTAssertEqual(AbsolutePath("/").basenameWithoutExt, "/")
+        #endif
         XCTAssertEqual(AbsolutePath("/a").basenameWithoutExt, "a")
         XCTAssertEqual(AbsolutePath("/./a").basenameWithoutExt, "a")
         XCTAssertEqual(AbsolutePath("/../..").basenameWithoutExt, "/")
@@ -205,6 +269,42 @@ class PathTests: XCTestCase {
 
     @available(*, deprecated)
     func testConcatenation() {
+        #if os(Windows)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/"), RelativePath("")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/"), RelativePath(".")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/"), RelativePath("..")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/"), RelativePath("bar")).pathString, #"\bar"#)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/foo/bar"), RelativePath("..")).pathString, #"\foo"#)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/bar"), RelativePath("../foo")).pathString, #"\foo"#)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/bar"), RelativePath("../foo/..//")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath(AbsolutePath("/bar/../foo/..//yabba/"), RelativePath("a/b")).pathString, #"\yabba\a\b"#)
+
+        XCTAssertEqual(AbsolutePath("/").appending(RelativePath("")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/").appending(RelativePath(".")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/").appending(RelativePath("..")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/").appending(RelativePath("bar")).pathString, #"\bar"#)
+        XCTAssertEqual(AbsolutePath("/foo/bar").appending(RelativePath("..")).pathString, #"\foo"#)
+        XCTAssertEqual(AbsolutePath("/bar").appending(RelativePath("../foo")).pathString, #"\foo"#)
+        XCTAssertEqual(AbsolutePath("/bar").appending(RelativePath("../foo/..//")).pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/bar/../foo/..//yabba/").appending(RelativePath("a/b")).pathString, #"\yabba\a\b"#)
+
+        XCTAssertEqual(AbsolutePath("/").appending(component: "a").pathString, #"\a"#)
+        XCTAssertEqual(AbsolutePath("/a").appending(component: "b").pathString, #"\a\b"#)
+        XCTAssertEqual(AbsolutePath("/").appending(components: "a", "b").pathString, #"\a\b"#)
+        XCTAssertEqual(AbsolutePath("/a").appending(components: "b", "c").pathString, #"\a\b\c"#)
+
+        XCTAssertEqual(AbsolutePath("/a/b/c").appending(components: "", "c").pathString, #"\a\b\c\c"#)
+        XCTAssertEqual(AbsolutePath("/a/b/c").appending(components: "").pathString, #"\a\b\c"#)
+        XCTAssertEqual(AbsolutePath("/a/b/c").appending(components: ".").pathString, #"\a\b\c"#)
+        XCTAssertEqual(AbsolutePath("/a/b/c").appending(components: "..").pathString, #"\a\b"#)
+        XCTAssertEqual(AbsolutePath("/a/b/c").appending(components: "..", "d").pathString, #"\a\b\d"#)
+        XCTAssertEqual(AbsolutePath("/").appending(components: "..").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/").appending(components: ".").pathString, #"\"#)
+        XCTAssertEqual(AbsolutePath("/").appending(components: "..", "a").pathString, #"\a"#)
+
+        XCTAssertEqual(RelativePath("hello").appending(components: "a", "b", "c", "..").pathString, #"hello\a\b"#)
+        XCTAssertEqual(RelativePath("hello").appending(RelativePath("a/b/../c/d")).pathString, #"hello\a\c\d"#)
+        #else
         XCTAssertEqual(AbsolutePath(AbsolutePath("/"), RelativePath("")).pathString, "/")
         XCTAssertEqual(AbsolutePath(AbsolutePath("/"), RelativePath(".")).pathString, "/")
         XCTAssertEqual(AbsolutePath(AbsolutePath("/"), RelativePath("..")).pathString, "/")
@@ -239,6 +339,7 @@ class PathTests: XCTestCase {
 
         XCTAssertEqual(RelativePath("hello").appending(components: "a", "b", "c", "..").pathString, "hello/a/b")
         XCTAssertEqual(RelativePath("hello").appending(RelativePath("a/b/../c/d")).pathString, "hello/a/c/d")
+        #endif
     }
 
     func testPathComponents() {
@@ -360,8 +461,13 @@ class PathTests: XCTestCase {
             let data = try JSONEncoder().encode(foo)
             let decodedFoo = try JSONDecoder().decode(Foo.self, from: data)
             XCTAssertEqual(foo, decodedFoo)
+            #if os(Windows)
+            XCTAssertEqual(foo.path.pathString, #"\path\to\foo"#)
+            XCTAssertEqual(decodedFoo.path.pathString, #"\path\to\foo"#)
+            #else
             XCTAssertEqual(foo.path.pathString, "/path/to/foo")
             XCTAssertEqual(decodedFoo.path.pathString, "/path/to/foo")
+            #endif
         }
 
         do {
